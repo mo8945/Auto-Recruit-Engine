@@ -20,5 +20,10 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 
+#보안
 token.json
 backend/credentials.json
+
+# 빌드 결과물 및 기타
+dist/
+.DS_Store

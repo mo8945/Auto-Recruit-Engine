@@ -2,6 +2,7 @@ import os
 import dotenv
 from pathlib import Path
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 # 1. 환경 변수 로드 (경로를 명확하게 지정)
 # 현재 파일(main.py)의 부모(backend)의 부모(루트) 폴더에 있는 .env를 찾습니다.
@@ -16,6 +17,14 @@ print(f"--------------------------")
 from backend.api import sync
 
 app = FastAPI(title="Auto-Recruit Engine API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # 모든 도메인 허용 (개발용)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(sync.router, prefix="/api", tags=["Sync"])
 
