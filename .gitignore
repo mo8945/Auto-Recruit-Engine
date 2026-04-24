@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 env/
 backend/data/*
+backend/data/*.json
 !backend/data/.gitkeep
 
 # Node
@@ -18,3 +19,6 @@ frontend/dist/
 # OS
 .DS_Store
 Thumbs.db
+
+token.json
+backend/credentials.json
