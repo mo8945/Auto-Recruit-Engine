@@ -23,5 +23,5 @@ class AIEngine:
 
     def analyze_resume(self, text: str):
         """이력서 분석 전용 (기존 코드와 호환성 유지)"""
-        from backend.prompts.resume_prompts import RESUME_ANALYSIS_PROMPT
+        from prompts.resume_prompts import RESUME_ANALYSIS_PROMPT
         return self.get_completion(text, RESUME_ANALYSIS_PROMPT)
