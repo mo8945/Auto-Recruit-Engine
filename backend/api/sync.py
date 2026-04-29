@@ -1,3 +1,4 @@
+# api/sync.py
 from fastapi import APIRouter, HTTPException
 from core.email_worker import GmailWorker
 from utils.file_helper import extract_text_from_file
@@ -25,15 +26,14 @@ async def sync_gmail_resumes():
                 
                 raw_text = extract_text_from_file(file_path)
                 
-                # 1) JSON 파서를 사용하는 키워드 분석
+                # AI 분석 실행
                 analysis_result = engine.analyze_resume(raw_text)
-                
-                # 2) [수정] 텍스트 파서를 사용하는 심층 요약 분석 (에러 방지)
                 deep_summary = engine.get_text_completion(raw_text, RESUME_SUMMARY_PROMPT)
                 
+                print(f"--- [AI 분석 완료] {analysis_result.get('name')} ---")
                 email = f"applicant_{msg['id']}@example.com"
                 
-                # 지원자 저장
+                # 1. 지원자 저장 및 ID 확보
                 existing = supabase.table("applicants").select("id").eq("email", email).execute()
                 if existing.data:
                     applicant_id = existing.data[0]['id']
@@ -45,45 +45,69 @@ async def sync_gmail_resumes():
                     }).execute()
                     applicant_id = res.data[0]['id']
 
-                # 심층 분석 결과 저장
+                # 2. [수정 포인트] resumes 테이블 upsert
+                # on_conflict를 지정하여 중복 에러(23505)를 방지하고 내용을 업데이트합니다.
                 supabase.table("resumes").upsert({
                     "applicant_id": applicant_id,
                     "summary_text": str(deep_summary),
                     "raw_content": raw_text,
                     "file_url": "" 
-                }).execute()
+                }, on_conflict="applicant_id").execute() # applicant_id가 겹치면 업데이트하라!
+                print(f"이력서 요약 저장 성공!")
 
-                # 키워드 저장
+                # 3. applicant_keywords 테이블 저장
                 keywords_data = analysis_result.get("keywords", [])
                 if isinstance(keywords_data, list):
                     for item in keywords_data:
                         kw = item.get("keyword") if isinstance(item, dict) else item
                         cat = item.get("category", "기술") if isinstance(item, dict) else "기술"
+                        
                         if kw:
+                            # 키워드도 중복 방지를 위해 upsert (필요시 on_conflict 추가)
                             supabase.table("applicant_keywords").upsert({
-                                "applicant_id": applicant_id, "keyword": kw.strip(), "category": cat 
+                                "applicant_id": applicant_id,
+                                "keyword": kw.strip(),
+                                "category": cat 
                             }).execute()
-                
+                    print(f"핵심 역량 저장 완료!")
+
                 processed_count += 1
-                print(f"--- [분석 완료] {analysis_result.get('name')} ---")
+            
             except Exception as e:
-                print(f"개별 처리 에러: {e}")
+                # 여기서 에러가 나면 다음 지원자로 넘어가버립니다.
+                print(f"개별 지원자 처리 중 오류 발생: {e}")
                 continue
 
-        return {"message": "동기화 완료"}
+        return {"message": f"성공적으로 {processed_count}건의 데이터를 동기화했습니다."}
+    
     except Exception as e:
+        print(f"Error during sync: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/applicants")
 async def get_applicants():
     try:
-        apps_res = supabase.table("applicants").select("*, resumes(*)").execute()
+        # 1. 지원자 기본 정보 가져오기
+        apps_res = supabase.table("applicants").select("*").execute()
         applicants = apps_res.data
+        
+        # 2. 이력서 요약(resumes) 정보 통째로 가져오기
+        res_data_res = supabase.table("resumes").select("*").execute()
+        all_resumes = res_data_res.data
+        
+        # 3. 키워드 정보 통째로 가져오기
         kw_res = supabase.table("applicant_keywords").select("*").execute()
         all_keywords = kw_res.data
         
+        # 4. 파이썬에서 직접 매칭시켜주기 (핵심!)
         for app in applicants:
+            # 해당 지원자의 이력서 요약 찾아서 넣어주기
+            app['resumes'] = [r for r in all_resumes if r['applicant_id'] == app['id']]
+            
+            # 해당 지원자의 키워드 찾아서 넣어주기
             app['applicant_keywords'] = [k for k in all_keywords if k['applicant_id'] == app['id']]
+                
         return applicants
     except Exception as e:
+        print(f"조회 에러: {e}")
         return []

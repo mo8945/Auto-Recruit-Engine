@@ -1,6 +1,7 @@
+# core/ai_engine.py
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.output_parsers import JsonOutputParser, StrOutputParser # StrOutputParser 추가
 import os
 
 class AIEngine:
@@ -10,18 +11,21 @@ class AIEngine:
             api_key=os.getenv("OPENAI_API_KEY"),
             temperature=0
         )
-        self.parser = JsonOutputParser()
+        self.json_parser = JsonOutputParser()
+        self.str_parser = StrOutputParser() # 문자열 파서 추가
 
     def get_completion(self, context: str, prompt_template: str):
-        """
-        텍스트(context)와 프롬프트 템플릿을 받아 AI 분석 결과를 반환합니다.
-        """
+        """JSON 데이터 추출용 (키워드 분석 등)"""
         prompt = ChatPromptTemplate.from_template(prompt_template)
-        chain = prompt | self.llm | self.parser
-        
+        chain = prompt | self.llm | self.json_parser
+        return chain.invoke({"context": context})
+
+    def get_text_completion(self, context: str, prompt_template: str):
+        """[중요] 일반 텍스트 추출용 (심층 인사이트 요약용)"""
+        prompt = ChatPromptTemplate.from_template(prompt_template)
+        chain = prompt | self.llm | self.str_parser
         return chain.invoke({"context": context})
 
     def analyze_resume(self, text: str):
-        """이력서 분석 전용 (기존 코드와 호환성 유지)"""
         from prompts.resume_prompts import RESUME_ANALYSIS_PROMPT
         return self.get_completion(text, RESUME_ANALYSIS_PROMPT)
