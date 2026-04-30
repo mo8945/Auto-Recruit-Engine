@@ -13,7 +13,6 @@ const ApplicantRow = ({ applicant, onClick }) => {
           {applicant.name ? applicant.name[0] : "?"}
         </div>
         
-        {/* 이름 & 이메일 (게시판처럼 가로 배치) */}
         <div className="flex items-center gap-12 flex-1">
           <div className="w-32">
             <h4 className="font-bold text-slate-100 group-hover:text-blue-400 transition-colors">
@@ -34,9 +33,11 @@ const ApplicantRow = ({ applicant, onClick }) => {
           <span>{new Date(applicant.created_at).toLocaleDateString()}</span>
         </div>
         
+        {/* [수정] "면접 예정" 조건을 추가하여 주황색 배지를 적용합니다[cite: 9] */}
         <span className={`w-24 text-center px-3 py-1 rounded-full text-xs font-bold ${
           applicant.status === "최종 합격" ? "bg-green-500/10 text-green-500 border border-green-500/20" :
           applicant.status === "불합격" ? "bg-red-500/10 text-red-500 border border-red-500/20" :
+          applicant.status === "면접 예정" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : 
           "bg-blue-500/10 text-blue-500 border border-blue-500/20"
         }`}>
           {applicant.status || "서류 접수"}

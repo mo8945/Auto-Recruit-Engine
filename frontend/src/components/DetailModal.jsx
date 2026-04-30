@@ -1,108 +1,126 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { X, Award, MessageSquare, Mail, CheckCircle, ArrowRight, UserCheck, UserX, Cpu } from 'lucide-react';
+import { Mail, Lock, X, AlertTriangle } from 'lucide-react';
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const ADMIN_PASSWORD = "1234";
 
 const DetailModal = ({ applicant, onClose, onRefresh }) => {
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [showPasswordInput, setShowPasswordInput] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState(null);
+  const [password, setPassword] = useState("");
 
   if (!applicant) return null;
 
-  // [중요] 테이블 이름이 resumes이므로, 데이터도 resumes 배열로 들어옵니다.
-  // 안전하게 첫 번째 데이터를 가져와서 'resumeData'라는 변수에 담습니다.
-  const resumeData = (applicant.resumes && applicant.resumes.length > 0) 
-                     ? applicant.resumes[0] 
-                     : null;
-                 
-  const keywords = applicant.applicant_keywords || [];
-
-  const handleStatusUpdate = async (newStatus) => {
-    if (!window.confirm(`상태를 '${newStatus}'로 변경하시겠습니까?`)) return;
-    setIsUpdating(true);
-    try {
-      await axios.patch(`${API_BASE_URL}/applicants/${applicant.id}/status`, { status: newStatus });
-      onRefresh(); 
-      onClose();
-    } catch (error) {
-      alert("변경 중 오류가 발생했습니다.");
-    } finally {
-      setIsUpdating(false);
+  const handleStatusClick = (newStatus) => {
+    if (applicant.status === newStatus) return;
+    const isFinalStatus = applicant.status === "최종 합격" || applicant.status === "불합격";
+    if (isFinalStatus) {
+      setPendingStatus(newStatus);
+      setShowPasswordInput(true);
+    } else {
+      if (window.confirm(`'${newStatus}' 상태로 변경하시겠습니까?\n확인을 누르면 안내 메일이 발송됩니다.`)) {
+        executeStatusChange(newStatus);
+      }
     }
   };
 
+  const executeStatusChange = async (targetStatus) => {
+    try {
+      await axios.patch(`${API_BASE_URL}/applicants/${applicant.id}/status`, { status: targetStatus });
+      alert(`성공적으로 변경되었습니다.`);
+      onRefresh();
+      onClose();
+    } catch (error) {
+      console.error("상태 변경 실패:", error);
+      alert("변경 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleAdminVerify = () => {
+    if (password === ADMIN_PASSWORD) {
+      executeStatusChange(pendingStatus);
+      setShowPasswordInput(false);
+      setPassword("");
+    } else {
+      alert("비밀번호가 일치하지 않습니다! 🐧💦");
+      setPassword("");
+    }
+  };
+
+  // [수정 포인트] k.category 값을 읽어서 스타일을 결정합니다
+  const getTagStyle = (category) => {
+    const cleanCategory = category?.trim();
+    if (cleanCategory === "기술") return "bg-blue-950/30 text-blue-400 border-blue-800/30";
+    if (cleanCategory === "경험") return "bg-amber-950/30 text-amber-500 border-amber-800/30";
+    return "bg-rose-950/30 text-rose-400 border-rose-800/30"; // 인성 및 기타
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="bg-slate-900 border border-slate-800 w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4">
+      <div className="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden relative">
         
-        <div className="flex justify-between items-center p-8 border-b border-slate-800">
-          <h2 className="text-2xl font-black text-white flex items-center gap-3">
-            <Cpu className="text-blue-500" size={28} /> AI 심층 역량 분석 리포트
-          </h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full text-slate-500 transition-colors"><X size={28} /></button>
-        </div>
-
-        <div className="p-10 space-y-10 max-h-[70vh] overflow-y-auto text-left">
-          {/* 지원자 정보 */}
-          <div className="flex items-center gap-8">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl flex items-center justify-center text-4xl font-black text-white shadow-xl">
-              {applicant.name?.[0] || "?"}
+        {showPasswordInput && (
+          <div className="absolute inset-0 z-10 bg-slate-900/98 flex items-center justify-center p-6 animate-in fade-in zoom-in duration-200">
+            <div className="w-full max-w-sm text-center">
+              <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-amber-500/20 animate-pulse">
+                <AlertTriangle className="text-amber-500" size={40} />
+              </div>
+              <h3 className="text-2xl font-black text-white mb-2 tracking-tight">최종 결과 처리 완료 지원자</h3>
+              <p className="text-slate-400 text-sm mb-8 leading-relaxed">이미 <span className="text-amber-400 font-bold">[{applicant.status}]</span> 처리가 끝난 지원자입니다.<br/>상태를 강제로 변경하려면 관리자 패스코드를 입력하세요.</p>
+              <div className="relative mb-6">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAdminVerify()} placeholder="관리자 패스코드 입력" className="w-full bg-slate-950 border border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-slate-600" autoFocus />
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => { setShowPasswordInput(false); setPassword(""); }} className="flex-1 py-4 bg-slate-800 text-slate-300 font-black rounded-2xl hover:bg-slate-750 transition-all">변경 취소</button>
+                <button onClick={handleAdminVerify} className="flex-1 py-4 bg-amber-600 text-white font-black rounded-2xl hover:bg-amber-500 shadow-lg shadow-amber-900/40 transition-all">인증 및 수정</button>
+              </div>
             </div>
+          </div>
+        )}
+
+        <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg shadow-blue-900/20">{applicant.name?.[0]}</div>
             <div>
-              <div className="flex items-center gap-4 mb-2">
-                <h3 className="text-4xl font-black text-white">{applicant.name}</h3>
-                <span className="px-4 py-1.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-xl text-sm font-black">
-                  {applicant.status || "서류 접수"}
-                </span>
-              </div>
-              <p className="text-slate-400 flex items-center gap-2 text-lg"><Mail size={18}/> {applicant.email}</p>
+              <h2 className="text-2xl font-black text-white leading-tight">{applicant.name}</h2>
+              <div className="flex items-center gap-2 text-slate-500 text-sm"><Mail size={14} /><span>{applicant.email}</span></div>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 text-slate-500 hover:text-white hover:bg-slate-800 rounded-xl transition-all"><X size={24} /></button>
+        </div>
+
+        <div className="p-8 max-h-[60vh] overflow-y-auto">
+          <div className="mb-10">
+            <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4">채용 상태 변경</h3>
+            <div className="flex flex-wrap gap-2">
+              {["서류 접수", "면접 예정", "최종 합격", "불합격"].map((status) => (
+                <button key={status} onClick={() => handleStatusClick(status)} className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all border ${applicant.status === status ? "bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/40" : "bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-750 hover:text-slate-200"}`}>
+                  {status}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {/* AI 심층 인사이트 섹션 */}
-            <div className="space-y-4">
-              <h4 className="text-slate-500 font-black text-xs uppercase tracking-widest flex items-center gap-2">
-                <MessageSquare size={16} className="text-blue-500" /> AI 심층 인사이트
-              </h4>
-              <div className="bg-slate-950/80 p-8 rounded-[2rem] border border-slate-800 shadow-inner min-h-[180px] flex items-center">
-                <p className="text-slate-200 leading-relaxed text-lg font-medium italic">
-                  {/* [체크] resumeData 안의 summary_text를 정확히 부릅니다. */}
-                  {resumeData && resumeData.summary_text 
-                    ? `"${resumeData.summary_text}"` 
-                    : "저장된 심층 분석 데이터가 없습니다. 다시 동기화 해주세요. 🐧"}
-                </p>
-              </div>
-            </div>
-
-            {/* 역량 키워드 섹션 */}
-            <div className="space-y-4">
-              <h4 className="text-slate-500 font-black text-xs uppercase tracking-widest flex items-center gap-2">
-                <Award size={16} className="text-amber-500" /> 역량 키워드 맵
-              </h4>
-              <div className="flex flex-wrap gap-2 pt-2">
-                {keywords.map((kw, idx) => (
-                  <div key={idx} className={`px-4 py-2 rounded-2xl border text-sm font-bold flex items-center gap-2 ${
-                    kw.category === '인성' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                    kw.category === '경험' ? 'bg-purple-500/10 border-purple-500/20 text-purple-400' :
-                    'bg-blue-500/10 border-blue-500/20 text-blue-400'
-                  }`}>
-                    <CheckCircle size={14} /> {kw.keyword}
-                  </div>
-                ))}
-              </div>
+          <div>
+            <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4">AI 역량 분석</h3>
+            <div className="flex flex-wrap gap-2">
+              {applicant.applicant_keywords?.length > 0 ? (
+                applicant.applicant_keywords.map((k, i) => (
+                  <span key={i} className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${getTagStyle(k.category)}`}>
+                    #{k.keyword}
+                  </span>
+                ))
+              ) : (
+                <span className="text-slate-600 text-xs italic">분석된 키워드가 없습니다.</span>
+              )}
             </div>
           </div>
         </div>
 
-        {/* 푸터 버튼 */}
-        <div className="p-8 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
-          <div className="flex gap-4">
-            <button disabled={isUpdating} onClick={() => handleStatusUpdate("면접 예정")} className="px-6 py-3 bg-amber-600/10 hover:bg-amber-600 text-amber-500 hover:text-white border border-amber-600/20 rounded-2xl font-black transition-all flex items-center gap-2"><ArrowRight size={20}/> 면접 예정</button>
-            <button disabled={isUpdating} onClick={() => handleStatusUpdate("최종 합격")} className="px-6 py-3 bg-green-600/10 hover:bg-green-600 text-green-500 hover:text-white border border-green-600/20 rounded-2xl font-black transition-all flex items-center gap-2"><UserCheck size={20}/> 합격 처리</button>
-            <button disabled={isUpdating} onClick={() => handleStatusUpdate("불합격")} className="px-6 py-3 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-600/20 rounded-2xl font-black transition-all flex items-center gap-2"><UserX size={20}/> 불합격 처리</button>
-          </div>
-          <button onClick={onClose} className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-black transition-all">닫기</button>
+        <div className="p-6 border-t border-slate-800 bg-slate-900/50 flex justify-end">
+          <button onClick={onClose} className="px-8 py-3 bg-slate-800 text-white text-sm font-black rounded-2xl hover:bg-slate-700 transition-all border border-slate-700">닫기</button>
         </div>
       </div>
     </div>
