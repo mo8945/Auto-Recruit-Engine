@@ -108,7 +108,7 @@ const VisualizationView = ({ applicants }) => {
             <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
             핵심 기술 역량 보유 현황 (Top 15)[cite: 5]
           </h3>
-          <div className="h-[400px] w-full"> {/* 높이를 고정하여 세로 비율 조정 */}
+          <div className="h-100 w-full"> {/* 높이를 고정하여 세로 비율 조정 */}
             <Bar data={techChartData} options={commonOptions} />
           </div>
         </div>
@@ -121,7 +121,7 @@ const VisualizationView = ({ applicants }) => {
             <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
             채용 프로세스 단계별 현황[cite: 5]
           </h3>
-          <div className="h-[400px] w-full">
+          <div className="h-100 w-full">
             <Bar data={statusChartData} options={commonOptions} />
           </div>
         </div>
