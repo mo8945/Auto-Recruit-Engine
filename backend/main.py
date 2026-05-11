@@ -35,3 +35,4 @@ app.include_router(applicants.router)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Auto-Recruit Engine API"}
+#최종수정완료.
