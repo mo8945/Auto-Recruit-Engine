@@ -23,7 +23,10 @@ app = FastAPI(title="Auto-Recruit Engine API")
 # 3. CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=[
+        "http://localhost:5173",                     # 로컬 테스트용
+        "https://auto-recruit-frontend-1.vercel.app"  # 배포된 Vercel 주소 (슬래시 없이!)
+    ], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
