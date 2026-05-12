@@ -2,11 +2,19 @@ import os
 import base64
 import re
 import json
+import logging
 from email.mime.text import MIMEText
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+
+# 1. 로그 설정 (Render 실시간 로그 최적화)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly',
@@ -20,47 +28,56 @@ class GmailWorker:
 
     def _authenticate(self):
         creds = None
-        # 1. 렌더 환경 변수 확인 (이름을 두 가지 다 확인해봅니다)
+        # 2. 렌더 환경 변수 확인
         token_json = os.environ.get('GOOGLE_TOKEN_JSON')
         
-        # 🔍 디버깅 로그 추가
-        print(f"👉 [디버그] GOOGLE_TOKEN_JSON 읽기 시도: {'성공' if token_json else '실패(None)'}", flush=True)
+        logger.info("🔍 [수사망] GOOGLE_TOKEN_JSON 환경 변수 읽기 시도 중...")
         
         if token_json:
             try:
+                # 환경 변수에 저장된 JSON 문자열을 로드
                 token_data = json.loads(token_json)
                 creds = Credentials.from_authorized_user_info(token_data, SCOPES)
-                print("✅ 환경 변수로부터 토큰 로드 완료", flush=True)
+                logger.info("✅ [성공] Render 환경 변수로부터 토큰을 로드했습니다.")
             except Exception as e:
-                print(f"❌ 환경 변수 토큰 파싱 에러: {e}", flush=True)
+                logger.error(f"❌ [실패] 환경 변수 토큰 파싱 중 에러 발생: {e}")
+        else:
+            logger.warning("🚨 [경고] GOOGLE_TOKEN_JSON이 None입니다. Render 설정을 확인하세요!")
         
-        # 2. 로컬 파일 확인
-        elif os.path.exists('token.json'):
-            print("👉 [디버그] 로컬 token.json 파일 발견!", flush=True)
+        # 3. 로컬 테스트용 (환경 변수가 없을 때만 작동)
+        if not creds and os.path.exists('token.json'):
+            logger.info("👉 [정보] 로컬 token.json 파일을 발견하여 로드합니다.")
             creds = Credentials.from_authorized_user_file('token.json', SCOPES)
 
-        # 3. 인증 만료 처리
+        # 4. 인증이 만료되었거나 없을 때 처리
         if not creds or not creds.valid:
-            print("👉 [디버그] 인증이 없거나 만료됨. 갱신 시도 중...", flush=True)
             if creds and creds.expired and creds.refresh_token:
                 try:
+                    logger.info("🔄 [갱신] 토큰이 만료되어 Refresh Token으로 갱신을 시도합니다...")
                     creds.refresh(Request())
-                    print("✅ 토큰 갱신 성공!", flush=True)
+                    logger.info("✅ [완료] 토큰 갱신 성공!")
                 except Exception as e:
-                    print(f"❌ 토큰 갱신 실패: {e}", flush=True)
+                    logger.error(f"❌ [에러] 토큰 갱신 실패: {e}")
             else:
-                print("🚨 갱신 불가: 새로운 로그인이 필요합니다.", flush=True)
-                # 배포 환경에서는 여기서 멈추게 됨
-                if not os.getenv('RENDER'): # 로컬일 때만 브라우저 실행
+                logger.error("🚨 [치명적] 유효한 토큰이 없고 갱신도 불가능합니다. 수동 로그인이 필요합니다.")
+                # Render 서버 환경이 아닐 때만 브라우저 로그인 실행
+                if not os.environ.get('RENDER'):
+                    logger.info("🌐 로컬 브라우저 인증을 시작합니다...")
                     flow = InstalledAppFlow.from_client_secrets_file('backend/credentials.json', SCOPES)
                     creds = flow.run_local_server(port=0)
+                    with open('token.json', 'w') as token:
+                        token.write(creds.to_json())
         
         return creds
 
     def fetch_emails_with_attachments(self, query):
-        results = self.service.users().messages().list(userId='me', q=query).execute()
-        messages = results.get('messages', [])
-        return messages
+        try:
+            results = self.service.users().messages().list(userId='me', q=query).execute()
+            messages = results.get('messages', [])
+            return messages
+        except Exception as e:
+            logger.error(f"❌ 이메일 목록 가져오기 실패: {e}")
+            return []
 
     def get_message_details(self, msg_id, save_dir='attachments'):
         message = self.service.users().messages().get(userId='me', id=msg_id).execute()
@@ -106,17 +123,9 @@ class GmailWorker:
             message['subject'] = subject
             raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
             self.service.users().messages().send(userId='me', body={'raw': raw_message}).execute()
-            print(f"✅ 메일 발송 완료: {receiver}")
+            logger.info(f"✅ 메일 발송 완료: {receiver}")
         except Exception as e:
-            print(f"❌ 메일 발송 에러: {e}")
+            logger.error(f"❌ 메일 발송 에러: {e}")
 
 if __name__ == "__main__":
-    print("🚀 Gmail 인증 프로세스를 시작합니다...")
-    try:
-        # 이 객체가 생성될 때 자동으로 _authenticate()가 호출됩니다.
-        worker = GmailWorker()
-        print("\n✅ 인증 성공! 이제 폴더에 생성된 'token.json'을 확인하세요.")
-        print("💡 이 파일의 내용을 복사해서 Render의 GOOGLE_TOKEN_JSON 환경 변수에 넣어주세요!")
-    except Exception as e:
-        print(f"\n❌ 인증 중 에러 발생: {e}")
-        print("💡 credentials.json 파일이 현재 폴더에 있는지 확인해 주세요.")
+    worker = GmailWorker()
