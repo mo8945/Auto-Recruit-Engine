@@ -1,3 +1,8 @@
+body {
+  /* 🐧 100% 화면일 때 실제로는 75% 크기로 보이게 만듭니다. */
+  zoom: 0.75;
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;
