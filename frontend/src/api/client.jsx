@@ -62,12 +62,20 @@ export const updateApplicantStatusApi = async (applicantId, newStatus) => {
  */
 export const requestSyncApi = async (passcode) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/sync`, { 
+    console.log("🚀 [동기화 시도] 보낼 패스코드:", passcode);
+    
+    // 🐧 주소 중간에 /api 를 꼭 넣어줘야 합니다!
+    const response = await axios.post(`${API_BASE_URL}/api/sync`, { 
       passcode: String(passcode) 
     });
+
+    console.log("✅ [동기화 결과]:", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ [동기화 에러]:", error.response?.data || error.message);
+    // 이제 404가 아니라 백엔드의 실제 에러 메시지가 여기에 찍힐 겁니다.
+    const serverDetail = error.response?.data?.detail;
+    console.error("❌ [서버 에러 상세]:", serverDetail || "알 수 없는 에러");
+    alert(`동기화 실패: ${serverDetail}`);
     throw error;
   }
 };
