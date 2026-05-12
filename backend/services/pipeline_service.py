@@ -17,7 +17,7 @@ async def run_resume_pipeline(msg_id: str, worker: GmailWorker, engine: AIEngine
             return False
 
         # 2. 모든 첨부파일 가져오기
-        file_paths, snippet, real_email = worker.get_attachments(msg_id)
+        file_paths, snippet, real_email = worker.get_message_details(msg_id)
         if not file_paths: return False
         
         applicant_email = real_email or f"unknown_{msg_id[:8]}@gmail.com"
