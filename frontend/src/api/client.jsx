@@ -22,14 +22,13 @@ export const fetchApplicantsApi = async () => {
   try {
     const { data, error } = await supabase
       .from('applicants')
-      .select(`
-        *,
-        applicant_keywords (*),
-        resumes (*)
-      `)
+      .select('*, applicant_keywords(*), resumes(*)') // 🐧 괄호 사이의 공백이나 줄바꿈을 제거했습니다!
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("❌ Supabase 쿼리 에러 상세:", error);
+      throw error;
+    }
     return data;
   } catch (error) {
     console.error("❌ [client.jsx] Supabase 로드 에러:", error);
