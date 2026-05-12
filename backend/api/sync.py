@@ -42,9 +42,12 @@ async def sync_gmail_resumes(auth: AuthRequest):
                 continue
 
         return {"message": f"총 {success_count}건 동기화 완료"}
+    
     except Exception as e:
-        print(f"🔥 Sync Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        # 🐧 이 부분이 핵심입니다! 에러 원인을 프론트엔드로 전달합니다.
+        error_detail = f"지메일 인증 실패: {str(e)}"
+        print(f"❌ {error_detail}")
+        raise HTTPException(status_code=500, detail=error_detail)
 
 @router.get("/applicants")
 async def get_applicants():
