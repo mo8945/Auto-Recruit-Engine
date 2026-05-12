@@ -74,12 +74,18 @@ export const requestSyncApi = async (passcode) => {
 
 export const clearAllDataApi = async (passcode) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/admin/clear-all`, {
-      passcode: String(passcode)
+    // 🐧 [확인용] 버튼 누르는 순간 브라우저 콘솔(F12)에 찍힙니다.
+    console.log("🚀 [백엔드로 전송 시도] Passcode:", passcode);
+    console.log("📍 [전송 주소]:", `${API_BASE_URL}/api/admin/clear-all`);
+
+    const response = await axios.post(`${API_BASE_URL}/api/admin/clear-all`, { 
+      passcode: String(passcode) // 명시적으로 문자열 변환
     });
+    
     return response.data;
   } catch (error) {
-    console.error("삭제 에러")
+    // 에러 발생 시 백엔드가 뭐라고 대답했는지 콘솔에 상세히 찍어줍니다.
+    console.error("❌ 초기화 에러 상세:", error.response?.data);
     throw error;
   }
 };
