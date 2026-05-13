@@ -44,7 +44,7 @@ export const updateApplicantStatusApi = async (applicantId, newStatus) => {
   try {
     // 🕵️‍♂️ 터미널 에러 loc: ['body', 'status_update'] 를 해결하는 유일한 구조
     const response = await axios.patch(
-      `${API_BASE_URL}/applicants/${applicantId}/status`, 
+      `${API_BASE_URL}/api/applicants/${applicantId}/status`, 
       {
         status: String(newStatus) // 백엔드 StatusUpdateRequest 모델이 status 필드만 가진 경우
       }

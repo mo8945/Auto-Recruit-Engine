@@ -87,7 +87,17 @@ class GmailWorker:
         from_email = ""
         for header in headers:
             if header.get('name') == 'From':
-                from_email = header.get('value')
+                # 🐧 [수정 포인트] 원본값(이름 <이메일>)을 가져옵니다.
+                raw_from = header.get('value', '')
+                
+                # 정규표현식으로 꺽쇠 < > 안의 이메일만 추출합니다.
+                import re
+                email_match = re.search(r'<(.*?)>', raw_from)
+                if email_match:
+                    from_email = email_match.group(1).strip()
+                else:
+                    # 꺽쇠가 없는 경우(예: 그냥 이메일만 있는 경우)는 양 끝 공백만 제거
+                    from_email = raw_from.strip()
                 break
 
         parts = payload.get('parts', [])
@@ -114,8 +124,9 @@ class GmailWorker:
                     walk_parts(part['parts'])
 
         walk_parts(parts)
+        # 이제 from_email은 "test@example.com" 처럼 깨끗한 상태로 반환됩니다.
         return file_paths, message.get('snippet', ''), from_email
-
+    
     def send_status_email(self, receiver, subject, body):
         try:
             message = MIMEText(body)
