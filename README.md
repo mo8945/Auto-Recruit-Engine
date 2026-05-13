@@ -34,3 +34,5 @@ Auto-Recruit Engine/
 │   │   └── views/    # MainDashboard.jsx
 ├── Dockerfile        # Render 배포용 가상화 설정
 └── README.md         # 프로젝트 설명서
+
+업데이트: 2026-05-13 | 기능 구현 및 디버깅 완료
