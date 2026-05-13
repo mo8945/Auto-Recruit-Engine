@@ -110,7 +110,7 @@ const MainDashboard = ({ user, profile, onLogout }) => {
       <div className="max-w-7xl mx-auto mt-12">
         <SearchHeader 
           searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
+          onSearchChange={setSearchTerm}
           totalCount={applicants.length}
           filteredCount={filteredApplicants.length}
         />
