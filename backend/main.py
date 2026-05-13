@@ -15,7 +15,7 @@ print(f"SUPABASE_URL: {'✅' if os.getenv('VITE_SUPABASE_URL') else '❌'}")
 print(f"--------------------------")
 
 # 2. 라우터 임포트
-from routes import applicants
+# from routes import applicants
 from api import sync
 
 app = FastAPI(title="Auto-Recruit Engine API")
@@ -30,7 +30,7 @@ app.add_middleware(
 )
 
 app.include_router(sync.router, prefix="/api", tags=["Sync"])
-app.include_router(applicants.router)
+# app.include_router(applicants.router)
 
 @app.get("/")
 def read_root():

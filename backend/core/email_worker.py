@@ -129,6 +129,11 @@ class GmailWorker:
     
     def send_status_email(self, receiver, subject, body):
         try:
+            # 추가할 디버깅 로그
+            logger.info(f"🚀 실제 발송 시도 - 수신자: {receiver}, 제목: {subject}")
+            if not body:
+                logger.warning("⚠️ 경고: 발송할 메일 내용이 비어있습니다!")
+                return
             message = MIMEText(body)
             message['to'] = receiver
             message['subject'] = subject

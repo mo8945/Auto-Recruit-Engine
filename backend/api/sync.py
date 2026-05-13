@@ -79,7 +79,7 @@ async def get_applicants():
         return []
 
 # backend/api/sync.py 전체 수정
-@router.put("/applicants/{applicant_id}/status")
+@router.patch("/applicants/{applicant_id}/status")
 async def update_applicant_status(applicant_id: str, request: StatusUpdateRequest):
     try:
         # 🐧 여기서 단순히 DB만 고치지 말고, 메일 발송 서비스(update_status_and_notify)를 호출해야 합니다!
