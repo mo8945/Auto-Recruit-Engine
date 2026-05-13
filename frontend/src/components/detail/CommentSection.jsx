@@ -52,9 +52,9 @@ export default function CommentSection({ applicantId, userProfile, onSaved }) {
           .from('comments')
           .insert([{
             applicant_id: applicantId,
-            content: commentText,
-            department: userProfile.department,
-            author_id: userProfile.id // 스키마에 맞춰 author_id 저장
+            content: commentText.trim(),
+            department: userProfile?.department,
+            author_id: userProfile?.id // 스키마에 맞춰 author_id 저장
           }]);
         if (error) throw error;
       }

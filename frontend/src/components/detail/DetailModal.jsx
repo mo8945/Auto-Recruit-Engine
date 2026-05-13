@@ -51,7 +51,7 @@ export default function DetailModal({ applicant, userProfile, onClose, onRefresh
           </div>
         </div>
         <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">
-          {activeTab === 'AI' ? <AIEvaluationSection applicant={applicant} /> : <CommentSection applicantId={applicant.id} />}
+          {activeTab === 'AI' ? <AIEvaluationSection applicant={applicant} /> : <CommentSection applicantId={applicant.id} userProfile={userProfile} onSaved={() => {if (onRefresh) onRefresh();}}/>}
         </div>
       </div>
     </div>
