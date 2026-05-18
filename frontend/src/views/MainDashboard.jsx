@@ -17,7 +17,6 @@ const MainDashboard = ({ user, profile, onLogout }) => {
   const [showAdminModal, setShowAdminModal] = useState(false); 
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // 🐧 [Security] 인사팀 권한 체크 로직
   const isHRCheck = 
     profile?.role === 'hr' || 
     profile?.department?.includes('인사') || 
@@ -32,135 +31,118 @@ const MainDashboard = ({ user, profile, onLogout }) => {
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  // 1. 메일 동기화 실행
-  const handleSyncExecute = async (passcode) => {
+  const handleSyncExecute = async () => {
+    setIsSyncing(true);
     try {
-      setIsSyncing(true);
-      setShowAuthModal(false);
-      await requestSyncApi(passcode);
-      alert("동기화가 완료되었습니다! 🐧");
+      await requestSyncApi();
       await loadData();
     } catch (error) {
-      alert("동기화 실패: 패스코드를 확인해주세요.");
+      console.error("동기화 실패:", error);
     } finally {
       setIsSyncing(false);
+      setShowAuthModal(false);
     }
   };
 
-  // 2. 시즌 데이터 전체 초기화 (Season Clean)
-  const handleSeasonClean = async (passcode) => {
-    if (!window.confirm("❗ [영구 삭제 경고]\n정말로 모든 지원자 데이터를 삭제하시겠습니까?\n이 작업은 절대 되돌릴 수 없으며, 모든 분석 결과가 파기됩니다.")) {
-      return;
-    }
-
+  const handleSeasonClean = async () => {
     try {
-      setIsSyncing(true);
-      setShowAdminModal(false);
-      await clearAllDataApi(passcode);
-      alert("공채 시즌 데이터가 성공적으로 초기화되었습니다. 🧹");
-      await loadData(); 
+      await clearAllDataApi();
+      setApplicants([]);
     } catch (error) {
-      // 🐧 서버 에러(UUID 타입 등) 발생 시에도 사용자에게 안내
-      alert("초기화 실패: 권한이 없거나 서버 오류가 발생했습니다.");
+      console.error("초기화 실패:", error);
     } finally {
-      setIsSyncing(false);
+      setShowAdminModal(false);
     }
   };
 
   const filteredApplicants = applicants.filter(app => {
-    const search = searchTerm.toLowerCase();
-    const statusMatch = filterStatus === "전체" || app.status === filterStatus;
-    const nameMatch = app.name?.toLowerCase().includes(search);
-    const emailMatch = app.email?.toLowerCase().includes(search);
-    const keywordMatch = app.applicant_keywords?.some(k => 
-      k.keyword?.toLowerCase().includes(search)
-    );
-
-    return statusMatch && (nameMatch || emailMatch || keywordMatch);
+    const matchesSearch = 
+      app.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.keywords?.some(k => k.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesStatus = filterStatus === "전체" || app.status === filterStatus;
+    return matchesSearch && matchesStatus;
   });
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-white p-8">
-      
-      {/* 로딩 오버레이 */}
-      {isSyncing && (
-        <div className="fixed inset-0 z-100 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md">
-          <div className="w-20 h-20 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-6"></div>
-          <h2 className="text-2xl font-black text-white mb-2 animate-pulse">
-            데이터를 처리 중입니다
-          </h2>
-          <p className="text-slate-400 font-medium">잠시만 기다려 주세요! 🐧</p>
-          <div className="w-64 h-1.5 bg-slate-800 rounded-full mt-8 overflow-hidden">
-            <div className="h-full bg-blue-500 animate-loading-bar"></div>
-          </div>
-        </div>
-      )}
-
-      <Header 
-        onRefresh={() => setShowAuthModal(true)}
-        isSyncing={isSyncing}
-        currentView={view}
-        setView={setView}
-        profile={profile}
-        onLogout={onLogout}
-      />
-      
-      <div className="max-w-7xl mx-auto mt-12">
-        <SearchHeader 
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          totalCount={applicants.length}
-          filteredCount={filteredApplicants.length}
+    <div className="min-h-screen bg-slate-950 text-slate-100 py-6 md:py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased flex flex-col justify-between">
+      <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col space-y-6 md:space-y-10">
+        <Header 
+          onRefresh={() => setShowAuthModal(true)}
+          isSyncing={isSyncing}
+          currentView={view}
+          setView={setView}
+          profile={profile}
+          onLogout={onLogout}
         />
 
-        {/* 상태 필터 버튼 */}
-        <div className="mb-8 px-4 py-6 bg-slate-900/20 rounded-3xl border border-slate-800/50">
-          <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 ml-1">Status Filter</p>
-          <div className="flex flex-wrap gap-3">
-            {["전체", "서류 접수", "면접 예정", "최종 합격", "불합격"].map((status) => (
-              <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                className={`px-6 py-2.5 rounded-2xl text-sm font-bold transition-all border ${
-                  filterStatus === status
-                    ? "bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/20"
-                    : "bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700"
-                }`}
-              >
-                {status}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {view === "list" ? (
-          <div className="bg-slate-900/20 rounded-4xl border border-slate-800 shadow-2xl overflow-hidden backdrop-blur-sm">
-            <ApplicantTable 
-              applicants={filteredApplicants} 
-              onApplicantClick={setSelectedApplicant} 
-            />
-          </div>
-        ) : (
-          <VisualizationView applicants={filteredApplicants} />
-        )}
+        <main className="flex-1 flex flex-col space-y-5 md:space-y-8">
+          <SearchHeader 
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            totalCount={applicants.length}
+            filteredCount={filteredApplicants.length}
+          />
 
-        {/* 🐧 [Security Check] 인사팀 권한이 있을 때만 하단 관리 섹션 노출 */}
+          <div className="bg-slate-900/10 border border-white/2 p-4 md:p-6 rounded-4xl backdrop-blur-md flex flex-col gap-4 md:gap-6">
+            <div>
+              <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 ml-1 text-left">Status Filter</p>
+              <div className="grid grid-cols-3 md:flex md:flex-wrap gap-2.5">
+                {["전체", "서류 접수", "면접 예정", "최종 합격", "불합격"].map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setFilterStatus(status)}
+                    className={`w-full md:w-auto px-2 md:px-6 py-2 rounded-2xl text-xs md:text-sm font-bold transition-all border text-center ${
+                      filterStatus === status
+                        ? "bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/20"
+                        : "bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700"
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 📊 코어 데이터 프리젠테이션 레이어 */}
+            {view === "list" ? (
+              <div className="w-full max-w-5xl mx-auto">
+                {/* 🐧 모바일에선 매끄럽게 가로 스크롤을 켜고, 둥근 테두리가 스크롤 영역과 딱 맞아떨어지게 설정 */}
+                <div className="w-full overflow-x-auto bg-slate-900/20 rounded-4xl border border-slate-800 shadow-2xl backdrop-blur-sm">
+                  {/* 🐧 모바일 환경에서 가로로 밀 때 글자가 깨지거나 우측에 유령 빈 여백이 생기지 않도록 최소 폭 850px 강제 부여 */}
+                  <div className="min-w-212.5 w-full">
+                    <ApplicantTable 
+                      applicants={filteredApplicants} 
+                      onApplicantClick={setSelectedApplicant} 
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <VisualizationView applicants={filteredApplicants} />
+            )}
+          </div>
+        </main>
+
         {isHRCheck && (
-          <div className="mt-24 mb-12 pb-12 border-t border-slate-900 pt-12 flex flex-col md:flex-row items-center justify-between gap-6 px-4">
-            <div className="text-left">
-              <h3 className="text-slate-400 font-bold mb-1 flex items-center gap-2">
+          <div className="mt-6 md:mt-12 w-full max-w-7xl mx-auto bg-red-950/5 border border-red-900/20 p-4 md:p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-left w-full md:w-auto">
+              <h3 className="text-red-500/80 font-bold mb-1 flex items-center gap-2 text-sm md:text-base">
                 <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
                 Admin Security Zone
               </h3>
-              <p className="text-slate-600 text-xs max-w-md">
+              <p className="text-slate-500 text-[11px] md:text-xs max-w-md leading-relaxed">
                 인사팀 전용 데이터 관리 구역입니다. 공채 시즌이 종료된 경우 개인정보 보호를 위해 DB를 초기화하십시오. 이 작업은 로그를 남기지 않습니다.
               </p>
             </div>
             <button 
               onClick={() => setShowAdminModal(true)}
-              className="px-8 py-4 rounded-2xl bg-red-950/20 text-red-500 border border-red-900/30 hover:bg-red-600 hover:text-white transition-all font-black text-sm tracking-tight whitespace-nowrap"
+              className="w-full md:w-auto px-6 py-3 rounded-xl bg-red-950/20 text-red-400 border border-red-900/30 hover:bg-red-600 hover:text-white transition-all font-black text-xs md:text-sm tracking-tight whitespace-nowrap text-center"
             >
               시즌 데이터 전체 초기화 (Season Clean)
             </button>
@@ -168,22 +150,14 @@ const MainDashboard = ({ user, profile, onLogout }) => {
         )}
       </div>
 
-      {/* 모달 섹션 */}
       {showAuthModal && (
         <PasscodeModal onConfirm={handleSyncExecute} onClose={() => setShowAuthModal(false)} />
       )}
-
       {showAdminModal && (
         <PasscodeModal onConfirm={handleSeasonClean} onClose={() => setShowAdminModal(false)} />
       )}
-
       {selectedApplicant && (
-        <DetailModal 
-          applicant={selectedApplicant} 
-          userProfile={profile}
-          onClose={() => setSelectedApplicant(null)} 
-          onRefresh={loadData}
-        />
+        <DetailModal applicant={selectedApplicant} onClose={() => setSelectedApplicant(null)} onUpdate={loadData} />
       )}
     </div>
   );
