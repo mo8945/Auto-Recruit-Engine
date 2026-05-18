@@ -71,6 +71,7 @@ export const requestSyncApi = async (passcode) => {
     });
 
     console.log("✅ [동기화 결과]:", response.data);
+    showSuccessAlert("동기화가 성공적으로 완료되었습니다. ✨");
     return response.data;
   } catch (error) {
     // 이제 404가 아니라 백엔드의 실제 에러 메시지가 여기에 찍힐 겁니다.

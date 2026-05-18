@@ -36,10 +36,10 @@ const MainDashboard = ({ user, profile, onLogout }) => {
     loadData();
   }, []);
 
-  const handleSyncExecute = async () => {
+  const handleSyncExecute = async (passcode) => {
     setIsSyncing(true);
     try {
-      await requestSyncApi();
+      await requestSyncApi(passcode);
       await loadData();
     } catch (error) {
       console.error("동기화 실패:", error);
