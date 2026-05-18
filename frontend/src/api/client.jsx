@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
+import { showSuccessAlert } from '../utils/customAlert'
 
 // 🐧 백엔드 API 주소 (FastAPI)
 const API_BASE_URL = 'https://auto-recruit-backend.onrender.com';
@@ -75,7 +76,7 @@ export const requestSyncApi = async (passcode) => {
     // 이제 404가 아니라 백엔드의 실제 에러 메시지가 여기에 찍힐 겁니다.
     const serverDetail = error.response?.data?.detail;
     console.error("❌ [서버 에러 상세]:", serverDetail || "알 수 없는 에러");
-    alert(`동기화 실패: ${serverDetail}`);
+    showSuccessAlert(`동기화 실패\n사유: ${serverDetail || "서버 응답 없음"}`);
     throw error;
   }
 };

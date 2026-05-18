@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../api/client';
 import { Pencil, Trash2, X, Check } from 'lucide-react'; // 아이콘 추가
+import { showSuccessAlert } from '../../utils/customAlert';
 
 export default function CommentSection({ applicantId, userProfile, onSaved }) {
   const [commentText, setCommentText] = useState("");
@@ -65,6 +66,7 @@ export default function CommentSection({ applicantId, userProfile, onSaved }) {
       if (onSaved) onSaved();
     } catch (error) {
       alert("작업 실패: " + error.message);
+      showSuccessAlert(`작업실패\n사유: ${error.message}`)
     } finally {
       setIsSaving(false);
     }
@@ -80,7 +82,7 @@ export default function CommentSection({ applicantId, userProfile, onSaved }) {
       fetchComments();
       if (onSaved) onSaved();
     } catch (error) {
-      alert("삭제 실패: " + error.message);
+      showSuccessAlert(`삭제실패\n사유: ${error.message}`)
     }
   };
 

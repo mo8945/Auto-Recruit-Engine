@@ -4,6 +4,7 @@ import CommentSection from './CommentSection';
 import AIEvaluationSection from './AIEvaluationSection';
 import { Sparkles, MessageSquare, X } from 'lucide-react';
 import { updateApplicantStatusApi } from '../../api/client';
+import { showSuccessAlert } from '../../utils/customAlert';
 
 export default function DetailModal({ applicant, userProfile, onClose, onRefresh }) {
   const [activeTab, setActiveTab] = useState('AI');
@@ -19,7 +20,7 @@ export default function DetailModal({ applicant, userProfile, onClose, onRefresh
       await updateApplicantStatusApi(applicant.id, newStatus);
       
       // 성공 시 알림
-      alert(`'${newStatus}' 상태로 변경되었으며, 지원자에게 메일이 발송되었습니다. 🐧`);
+      showSuccessAlert(`'${newStatus}' 상태로 변경되었으며, 지원자에게 메일이 발송되었습니다. 🐧`);
       
       if (onRefresh) onRefresh();
       onClose();
@@ -30,7 +31,7 @@ export default function DetailModal({ applicant, userProfile, onClose, onRefresh
         : "메일 발송 및 상태 변경에 실패했습니다.";
       
       console.error("상태 변경 실패 원인:", error.response);
-      alert(errorMsg);
+      showSuccessAlert(`${errorMsg}`)
     }
   };
 

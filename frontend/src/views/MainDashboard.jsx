@@ -6,6 +6,7 @@ import SearchHeader from '../components/list/SearchHeader';
 import PasscodeModal from '../components/common/PasscodeModal';
 import VisualizationView from '../components/list/VisualizationView';
 import { fetchApplicantsApi, requestSyncApi, clearAllDataApi } from '../api/client';
+import { showConfirmAlert, showSuccessAlert } from '../utils/customAlert';
 
 const MainDashboard = ({ user, profile, onLogout }) => {
   const [applicants, setApplicants] = useState([]);
@@ -48,15 +49,27 @@ const MainDashboard = ({ user, profile, onLogout }) => {
     }
   };
 
-  const handleSeasonClean = async () => {
-    try {
-      await clearAllDataApi();
-      setApplicants([]);
-    } catch (error) {
-      console.error("초기화 실패:", error);
-    } finally {
-      setShowAdminModal(false);
-    }
+  const handleSeasonClean = async (passcode) => {
+    showConfirmAlert(
+      "이 작업을 수행하면 이번 시즌 지원자 데이터가 영구히 전부 삭제됩니다.\n정말로 초기화를 진행하시겠습니까?",
+      async () => {
+        try {
+          await clearAllDataApi(passcode);
+          setApplicants([]);
+          showSuccessAlert("시즌 데이터가 완벽하게 초기화되었습니다. 🐧");
+        } catch (error) { 
+          // 🐧 1. 여기에 반드시 (error)라고 변수명을 명시해 주어야 내부에서 쓸 수 있습니다!
+          console.error("초기화 실패 원인 객체 자체:", error);
+          
+          // 🐧 2. 서버가 뱉어낸 상세 에러 메시지가 있다면 그걸 가져오고, 없으면 기본 문구를 띄우도록 방어벽을 칩니다.
+          const serverMessage = error.response?.data?.detail || error.message || "서버 응답 없음";
+          
+          showSuccessAlert(`초기화 실패\n사유: ${serverMessage}`);
+        } finally {
+          setShowAdminModal(false);
+        }
+      }
+    );
   };
 
   const filteredApplicants = applicants.filter(app => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from "../api/client"; // 경로는 프로젝트에 맞게 수정하세요!
 import { Mail, Lock, LogIn } from 'lucide-react';
+import { showSuccessAlert } from '../utils/customAlert';
 
 const LoginView = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ const LoginView = ({ onLoginSuccess }) => {
     });
 
     if (error) {
-      alert("로그인 실패: " + error.message);
+      showSuccessAlert(`로그인 실패\n사유: ${error.message}`);
     } else {
       // 로그인 성공 시 유저 정보 전달
       onLoginSuccess(data.user);
