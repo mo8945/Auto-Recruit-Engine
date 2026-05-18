@@ -157,7 +157,7 @@ const MainDashboard = ({ user, profile, onLogout }) => {
         <PasscodeModal onConfirm={handleSeasonClean} onClose={() => setShowAdminModal(false)} />
       )}
       {selectedApplicant && (
-        <DetailModal applicant={selectedApplicant} onClose={() => setSelectedApplicant(null)} onUpdate={loadData} />
+        <DetailModal applicant={selectedApplicant} userProfile={profile} onClose={() => setSelectedApplicant(null)} onRefresh={loadData} />
       )}
     </div>
   );

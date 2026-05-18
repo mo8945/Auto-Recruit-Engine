@@ -46,8 +46,8 @@ export default function DetailModal({ applicant, userProfile, onClose, onRefresh
           </div>
           <StatusManager currentStatus={applicant.status} onStatusChange={handleStatusUpdate} isHR={isHRCheck} />
           <div className="flex gap-2 mt-8 bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
-            <button onClick={() => setActiveTab('AI')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${activeTab === 'AI' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}><Sparkles size={18} className="inline mr-2" /> AI 역량 평가서</button>
-            <button onClick={() => setActiveTab('MEMO')} className={`flex-1 py-3 rounded-xl font-bold transition-all ${activeTab === 'MEMO' ? 'bg-slate-700 text-white' : 'text-slate-500'}`}><MessageSquare size={18} className="inline mr-2" /> 부서 검토 메모</button>
+            <button onClick={() => setActiveTab('AI')} className={`flex-1 py-3 px-2 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1 whitespace-nowrap ${activeTab === 'AI' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}><Sparkles size={18} className="inline mr-2" /> AI 역량 평가서</button>
+            <button onClick={() => setActiveTab('MEMO')} className={`flex-1 py-3 px-2 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-1 whitespace-nowrap ${activeTab === 'MEMO' ? 'bg-slate-700 text-white' : 'text-slate-500'}`}><MessageSquare size={18} className="inline mr-2" /> 부서 검토 메모</button>
           </div>
         </div>
         <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">

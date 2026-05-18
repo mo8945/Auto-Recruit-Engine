@@ -24,7 +24,7 @@ const ApplicantRow = ({ applicant, onClick }) => {
 
       {/* 3. 상태 뱃지 영역 */}
       <div className="flex justify-center px-2">
-        <span className={`w-full max-w-[110px] text-center py-1 rounded-full text-[11px] md:text-xs font-black ${
+        <span className={`w-full max-w-27.5 text-center py-1 rounded-full text-[11px] md:text-xs font-black ${
           applicant.status === "최종 합격" ? "bg-green-500/10 text-green-500 border border-green-500/20" :
           applicant.status === "불합격" ? "bg-red-500/10 text-red-500 border border-red-500/20" :
           applicant.status === "면접 예정" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : 
