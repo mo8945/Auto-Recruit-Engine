@@ -76,3 +76,5 @@
 ```bash
 npm install
 npm run dev
+
+최종 확인 및 수정 2026.05.26
