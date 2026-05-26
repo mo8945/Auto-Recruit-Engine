@@ -76,7 +76,7 @@ const MainDashboard = ({ user, profile, onLogout }) => {
     const matchesSearch = 
       app.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.keywords?.some(k => k.toLowerCase().includes(searchTerm.toLowerCase()));
+      app.applicant_keywords?.some(k => k.keyword?.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = filterStatus === "전체" || app.status === filterStatus;
     return matchesSearch && matchesStatus;

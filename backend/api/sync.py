@@ -82,7 +82,6 @@ async def get_applicants():
 @router.patch("/applicants/{applicant_id}/status")
 async def update_applicant_status(applicant_id: str, request: StatusUpdateRequest):
     try:
-        # 🐧 여기서 단순히 DB만 고치지 말고, 메일 발송 서비스(update_status_and_notify)를 호출해야 합니다!
         await update_status_and_notify(applicant_id, request.status)
         
         return {"message": f"상태가 {request.status}로 변경되었으며 메일이 발송되었습니다."}

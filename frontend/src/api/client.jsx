@@ -65,7 +65,6 @@ export const requestSyncApi = async (passcode) => {
   try {
     console.log("🚀 [동기화 시도] 보낼 패스코드:", passcode);
     
-    // 🐧 주소 중간에 /api 를 꼭 넣어줘야 합니다!
     const response = await axios.post(`${API_BASE_URL}/api/sync`, { 
       passcode: String(passcode) 
     });
